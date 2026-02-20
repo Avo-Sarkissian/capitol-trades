@@ -14,11 +14,11 @@ import networkx as nx
 import plotly.graph_objects as go
 from dash import dcc, html, callback, Input, Output, State
 
-CHART_BG   = "#080e1a"
-PAPER_BG   = "#080e1a"
-GRID_COLOR = "#1c2e4a"
-TEXT_COLOR = "#dce6f5"
-GOLD       = "#d4a843"
+CHART_BG   = "#06090f"
+PAPER_BG   = "#06090f"
+GRID_COLOR = "#1e2a36"
+TEXT_COLOR = "#e2e8f0"
+GOLD       = "#f0c040"
 DEM_BLUE   = "#3b82f6"
 REP_RED    = "#ef4444"
 SECTOR_CLR = "#d4a843"  # gold for sector nodes

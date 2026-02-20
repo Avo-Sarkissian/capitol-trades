@@ -1,34 +1,34 @@
 /* ═══════════════════════════════════════════════════════════════
-   Capitol Trades — UI v2
-   Dark financial terminal aesthetic. Clean, dense, fast.
+   Capitol Trades — v3 (modern financial terminal)
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Tokens ──────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 :root {
-  --bg:         #080e1a;
-  --bg-mid:     #0d1829;
-  --bg-card:    #111e35;
-  --bg-hover:   #162440;
-  --border:     #1c2e4a;
-  --border-hi:  #2a4070;
+  --bg:         #06090f;
+  --bg-panel:   #0c1219;
+  --bg-card:    #111920;
+  --bg-input:   #151d27;
+  --bg-hover:   #1a242f;
+  --border:     #1e2a36;
+  --border-hi:  #2c3e50;
 
-  --gold:       #d4a843;
-  --gold-hi:    #e8c76a;
-  --gold-dim:   #7a5e1e;
-  --gold-bg:    rgba(212,168,67,0.10);
+  --gold:       #f0c040;
+  --gold-dim:   #7a6520;
+  --gold-bg:    rgba(240,192,64,0.08);
+  --gold-bg-hi: rgba(240,192,64,0.16);
 
-  --text:       #dce6f5;
-  --text-muted: #6b849e;
-  --text-dim:   #3a5070;
+  --text:       #e2e8f0;
+  --text-sec:   #8899aa;
+  --text-dim:   #4a5a6a;
 
-  --dem:        #3b82f6;
-  --rep:        #ef4444;
-  --green:      #22c55e;
+  --dem:        #60a5fa;
+  --rep:        #f87171;
+  --green:      #4ade80;
 
-  --r:          5px;      /* border-radius token */
-  --font-mono:  'IBM Plex Mono', 'Courier New', monospace;
-  --font-ui:    'Inter', system-ui, sans-serif;
-  --transition: 0.15s ease;
+  --r:          6px;
+  --font:       'Inter', system-ui, -apple-system, sans-serif;
+  --mono:       'JetBrains Mono', 'SF Mono', monospace;
 }
 
 /* ── Reset ───────────────────────────────────────────────────── */
@@ -37,78 +37,79 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-ui);
-  font-size: 12px;
+  font-family: var(--font);
+  font-size: 13px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
 
-/* ── App shell ───────────────────────────────────────────────── */
+/* ── App wrapper ─────────────────────────────────────────────── */
 #app-wrapper {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  overflow: hidden;
 }
 
 /* ── Header ──────────────────────────────────────────────────── */
 #header {
-  background: var(--bg-mid);
+  background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
-  padding: 0 20px;
-  height: 48px;
+  height: 44px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  justify-content: space-between;
   flex-shrink: 0;
 }
 
+#header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 #header-logo {
-  font-family: var(--font-mono);
-  font-size: 15px;
+  font-family: var(--mono);
+  font-size: 13px;
   font-weight: 700;
   color: var(--gold);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  white-space: nowrap;
+  letter-spacing: 0.15em;
 }
 
 #header-subtitle {
-  color: var(--text-muted);
+  color: var(--text-dim);
   font-size: 11px;
-  padding-left: 14px;
+  padding-left: 12px;
   border-left: 1px solid var(--border);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-#header-badge {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--green);
-  letter-spacing: 0.1em;
+#header-right {
   display: flex;
   align-items: center;
-  gap: 5px;
-  white-space: nowrap;
+  gap: 6px;
 }
 
-#header-badge::before {
-  content: '';
+.live-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: var(--green);
-  box-shadow: 0 0 6px var(--green);
+  box-shadow: 0 0 8px var(--green);
   animation: pulse 2s infinite;
+}
+
+#header-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--green);
+  letter-spacing: 0.1em;
 }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50%       { opacity: 0.4; }
+  50%      { opacity: 0.3; }
 }
 
 /* ── Body ────────────────────────────────────────────────────── */
@@ -123,152 +124,174 @@ body {
 #sidebar {
   width: 220px;
   min-width: 220px;
-  background: var(--bg-mid);
+  background: var(--bg-panel);
   border-right: 1px solid var(--border);
-  padding: 12px 10px 16px;
+  padding: 8px;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 2px;
   flex-shrink: 0;
 }
 
-.sidebar-section {
-  padding: 10px 0 6px;
-  border-bottom: 1px solid var(--border);
+/* ── Filter blocks ───────────────────────────────────────────── */
+.filter-block {
+  padding: 8px 6px;
 }
 
-.sidebar-section:last-child { border-bottom: none; }
-
-.sidebar-section-title {
-  font-family: var(--font-mono);
+.filter-title {
+  font-family: var(--mono);
   font-size: 9px;
-  color: var(--gold-dim);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.12em;
+  margin-bottom: 6px;
 }
 
-.sidebar-section-title::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-
-.filter-label {
-  display: block;
-  font-size: 10px;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-  letter-spacing: 0.02em;
-}
-
-/* ── Radio pills (Party / Chamber) ──────────────────────────── */
+/* ── Radio pill group ────────────────────────────────────────── */
 .radio-pill {
-  display: flex;
-  border-radius: var(--r);
+  display: flex !important;
   border: 1px solid var(--border);
+  border-radius: var(--r);
   overflow: hidden;
-  background: var(--bg-card);
-  margin-bottom: 10px;
+  background: var(--bg-input);
 }
 
-/* Each option wrapper */
-.radio-pill > div {
+.radio-pill > label {
   flex: 1;
-  position: relative;
-}
-
-/* Hide the actual radio input */
-.radio-pill input[type="radio"] {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-}
-
-/* The visible label */
-.radio-pill label {
-  display: block;
   text-align: center;
   padding: 5px 2px;
-  cursor: pointer;
   font-size: 10px;
   font-weight: 500;
-  color: var(--text-muted);
-  background: transparent;
+  color: var(--text-sec);
+  cursor: pointer;
   border-right: 1px solid var(--border);
-  transition: background var(--transition), color var(--transition);
-  letter-spacing: 0.02em;
-  white-space: nowrap;
+  transition: all 0.15s ease;
+  user-select: none;
 }
 
-.radio-pill > div:last-child label { border-right: none; }
-
-.radio-pill input[type="radio"]:checked + label {
-  background: var(--gold-bg);
-  color: var(--gold);
-  font-weight: 600;
+.radio-pill > label:last-child {
+  border-right: none;
 }
 
-.radio-pill label:hover {
+.radio-pill > label:hover {
   background: var(--bg-hover);
   color: var(--text);
 }
 
-/* ── Date inputs ─────────────────────────────────────────────── */
+/* Checked state */
+.radio-pill > label.dcc-radio-active,
+.radio-pill input[type="radio"]:checked + label {
+  background: var(--gold-bg-hi);
+  color: var(--gold);
+  font-weight: 600;
+}
+
+/* ── DatePickerSingle ─────────────────────────────────────────── */
 .date-row {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-bottom: 10px;
 }
 
-.date-row span {
+.date-arrow {
   color: var(--text-dim);
   font-size: 11px;
   flex-shrink: 0;
 }
 
-input[type="date"] {
-  flex: 1;
-  min-width: 0;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  color: var(--text);
-  padding: 5px 6px;
-  font-size: 10px;
-  font-family: var(--font-mono);
-  cursor: pointer;
-  transition: border-color var(--transition);
-  color-scheme: dark;
+.date-row .dark-datepicker { flex: 1; min-width: 0; }
+
+/* Style the date picker input */
+.dark-datepicker .DateInput {
+  width: 100% !important;
+  background: transparent !important;
 }
 
-input[type="date"]:hover  { border-color: var(--border-hi); }
-input[type="date"]:focus  { outline: none; border-color: var(--gold-dim); }
-
-/* ── Dash Dropdown (dcc.Dropdown) ────────────────────────────── */
-/* Container */
-.Select, .VirtualizedSelect {
-  font-size: 11px !important;
-  margin-bottom: 8px;
-}
-
-/* The visible control bar */
-.Select-control {
-  background-color: var(--bg-card) !important;
+.dark-datepicker .DateInput_input {
+  background: var(--bg-input) !important;
+  color: var(--text) !important;
   border: 1px solid var(--border) !important;
   border-radius: var(--r) !important;
-  min-height: 30px !important;
-  height: auto !important;
-  transition: border-color var(--transition) !important;
+  font-family: var(--mono) !important;
+  font-size: 10px !important;
+  padding: 5px 8px !important;
+  width: 100% !important;
+  cursor: pointer !important;
+  line-height: 1.4 !important;
+}
+
+.dark-datepicker .DateInput_input:focus,
+.dark-datepicker .DateInput_input__focused {
+  border-color: var(--gold-dim) !important;
+  outline: none !important;
+}
+
+/* Calendar popup */
+.DayPicker,
+.CalendarMonth,
+.CalendarMonthGrid {
+  background: var(--bg-card) !important;
+}
+
+.DayPicker__withBorder {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6) !important;
+  border: 1px solid var(--border-hi) !important;
+  border-radius: var(--r) !important;
+}
+
+.CalendarMonth_caption {
+  color: var(--text) !important;
+  font-size: 12px !important;
+}
+
+.DayPicker_weekHeader_li small {
+  color: var(--text-dim) !important;
+  font-size: 10px !important;
+}
+
+.CalendarDay__default {
+  background: var(--bg-card) !important;
+  color: var(--text-sec) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.CalendarDay__default:hover {
+  background: var(--bg-hover) !important;
+  color: var(--text) !important;
+}
+
+.CalendarDay__selected {
+  background: var(--gold-bg-hi) !important;
+  color: var(--gold) !important;
+  border-color: var(--gold-dim) !important;
+}
+
+.CalendarDay__blocked_out_of_range {
+  color: var(--text-dim) !important;
+  background: var(--bg) !important;
+}
+
+.DayPickerNavigation_button {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 4px !important;
+}
+
+.DateInput_fang { display: none !important; }
+
+/* Hide the clear button on single date pickers */
+.SingleDatePickerInput_clearDate { display: none !important; }
+.SingleDatePickerInput { background: transparent !important; border: none !important; }
+.SingleDatePickerInput__withBorder { border: none !important; }
+
+/* ── Dash Dropdown ───────────────────────────────────────────── */
+.Select-control {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r) !important;
+  min-height: 32px !important;
   cursor: pointer !important;
 }
 
@@ -277,92 +300,89 @@ input[type="date"]:focus  { outline: none; border-color: var(--gold-dim); }
 .is-focused .Select-control,
 .is-open .Select-control {
   border-color: var(--gold-dim) !important;
-  box-shadow: 0 0 0 2px rgba(212,168,67,0.1) !important;
+  box-shadow: 0 0 0 1px rgba(240,192,64,0.15) !important;
 }
 
-/* Value text */
-.Select-value-label  { color: var(--text) !important; font-size: 11px !important; }
-.Select-placeholder  { color: var(--text-dim) !important; font-size: 11px !important; }
+.Select-value-label  { color: var(--text) !important; font-size: 12px !important; }
+.Select-placeholder  { color: var(--text-dim) !important; font-size: 12px !important; }
+.Select-input > input { color: var(--text) !important; }
+.Select-arrow-zone   { color: var(--text-dim) !important; }
 
-/* Input field inside */
-.Select-input input  { color: var(--text) !important; background: transparent !important; }
-
-/* Arrow */
-.Select-arrow-zone   { color: var(--text-muted) !important; }
-.Select-arrow        { border-top-color: var(--text-muted) !important; }
-.is-open .Select-arrow { border-bottom-color: var(--text-muted) !important; }
-
-/* Clear button */
-.Select-clear-zone   { color: var(--text-muted) !important; }
-.Select-clear-zone:hover { color: var(--text) !important; }
-
-/* Dropdown menu panel */
 .Select-menu-outer {
-  background-color: var(--bg-card) !important;
+  background: var(--bg-card) !important;
   border: 1px solid var(--border-hi) !important;
   border-radius: 0 0 var(--r) var(--r) !important;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.6) !important;
   z-index: 9999 !important;
+  margin-top: -1px !important;
 }
 
-.Select-menu { background: var(--bg-card) !important; }
+.Select-menu { max-height: 250px !important; }
 
-/* Individual options */
 .Select-option {
-  background-color: var(--bg-card) !important;
+  background: var(--bg-card) !important;
   color: var(--text) !important;
-  font-size: 11px !important;
-  padding: 7px 10px !important;
-  cursor: pointer !important;
+  font-size: 12px !important;
+  padding: 8px 10px !important;
 }
 
 .Select-option:hover,
-.Select-option.is-focused  { background-color: var(--bg-hover) !important; }
-.Select-option.is-selected { background-color: var(--gold-bg) !important; color: var(--gold) !important; }
-.Select-option.is-disabled { color: var(--text-dim) !important; }
+.Select-option.is-focused  { background: var(--bg-hover) !important; }
+.Select-option.is-selected { background: var(--gold-bg) !important; color: var(--gold) !important; }
 
-/* Multi-value chips */
-.Select-multi-value-wrapper { padding: 2px 4px 2px 2px !important; gap: 2px !important; display: flex !important; flex-wrap: wrap !important; }
-
+/* Multi-select chips */
 .Select-value {
-  background-color: var(--bg-hover) !important;
+  background: var(--bg-hover) !important;
   border: 1px solid var(--border-hi) !important;
-  border-radius: 3px !important;
+  border-radius: 4px !important;
   color: var(--text) !important;
   font-size: 10px !important;
-  margin: 2px 2px !important;
-  line-height: 1.4 !important;
 }
 
 .Select-value-icon {
-  border-right: 1px solid var(--border-hi) !important;
-  color: var(--text-muted) !important;
-  padding: 1px 4px !important;
+  border-right-color: var(--border) !important;
+  padding: 1px 5px !important;
 }
 
-.Select-value-icon:hover { background: var(--bg-card) !important; color: var(--text) !important; }
+.Select-value-icon:hover {
+  background: rgba(248,113,113,0.15) !important;
+  color: var(--rep) !important;
+}
 
-/* ── Sidebar stats strip ─────────────────────────────────────── */
-#sidebar-stats {
-  margin-top: 2px;
-  padding: 10px 0 0;
+/* ── Sidebar stats ───────────────────────────────────────────── */
+.sidebar-stats {
+  padding: 4px 6px;
+}
+
+.stats-grid {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .stat-chip {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 4px 8px;
+  justify-content: space-between;
+  padding: 6px 10px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--r);
 }
 
-.stat-chip-label { color: var(--text-muted); font-size: 9px; letter-spacing: 0.04em; }
-.stat-chip-value { color: var(--gold); font-family: var(--font-mono); font-size: 11px; font-weight: 600; }
+.stat-val {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.stat-lbl {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 
 /* ── Main content ────────────────────────────────────────────── */
 #main-content {
@@ -374,151 +394,128 @@ input[type="date"]:focus  { outline: none; border-color: var(--gold-dim); }
 }
 
 /* ── Tabs ────────────────────────────────────────────────────── */
-/* Strip container */
+/* Hide default Dash tab styling and apply our own */
 .custom-tabs {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* The tab strip itself */
-.custom-tabs > .tab-container,
-.custom-tabs [role="tablist"] {
-  background: var(--bg-mid) !important;
   border-bottom: 1px solid var(--border) !important;
-  display: flex !important;
-  padding: 0 4px !important;
+  background: var(--bg-panel) !important;
   flex-shrink: 0;
 }
 
-/* Individual tabs */
-.custom-tabs .tab {
-  font-family: var(--font-mono) !important;
+.custom-tab {
+  font-family: var(--mono) !important;
   font-size: 10px !important;
-  letter-spacing: 0.07em !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
-  padding: 10px 16px !important;
+  padding: 10px 18px !important;
+  color: var(--text-dim) !important;
   background: transparent !important;
   border: none !important;
   border-bottom: 2px solid transparent !important;
-  color: var(--text-muted) !important;
   cursor: pointer !important;
-  transition: color var(--transition), border-color var(--transition) !important;
-  margin-bottom: -1px !important;
-  white-space: nowrap !important;
+  transition: color 0.15s, border-color 0.15s !important;
 }
 
-.custom-tabs .tab:hover {
-  color: var(--text) !important;
-  background: var(--bg-hover) !important;
+.custom-tab:hover {
+  color: var(--text-sec) !important;
 }
 
-.custom-tabs .tab--selected {
+.custom-tab--selected {
   color: var(--gold) !important;
   border-bottom-color: var(--gold) !important;
   background: transparent !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
 }
 
-/* Tab content area */
+/* Tab content */
 .tab-content {
   flex: 1;
-  overflow: hidden;
-  padding: 14px 16px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px 16px;
 }
 
-/* ── Chart controls row ──────────────────────────────────────── */
+/* ── Chart controls bar ──────────────────────────────────────── */
 .chart-controls {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
-  padding: 8px 10px;
+  padding: 8px 12px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--r);
+  margin-bottom: 10px;
 }
 
-.chart-controls .filter-label {
+.chart-controls .filter-label,
+.chart-controls .filter-title {
   margin-bottom: 0;
-  color: var(--text-muted);
-  white-space: nowrap;
   font-size: 10px;
+  color: var(--text-sec);
+  white-space: nowrap;
 }
 
-/* Make dropdowns inside chart-controls inline */
 .chart-controls .Select { margin-bottom: 0 !important; }
 
-/* ── Summary stat cards (leaderboard) ───────────────────────── */
+/* ── Leaderboard stat cards ──────────────────────────────────── */
 .stat-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--r);
-  padding: 10px 14px;
-  transition: border-color var(--transition);
+  padding: 12px 14px;
+  transition: border-color 0.15s;
 }
 
 .stat-card:hover { border-color: var(--border-hi); }
 
 .stat-card-label {
-  font-family: var(--font-mono);
+  font-family: var(--mono);
   font-size: 9px;
-  color: var(--text-muted);
+  font-weight: 500;
+  color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-bottom: 4px;
 }
 
 .stat-card-value {
-  font-family: var(--font-mono);
+  font-family: var(--mono);
   font-size: 18px;
   font-weight: 700;
   color: var(--gold);
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
 .stat-card-sub {
   font-size: 10px;
-  color: var(--text-muted);
+  color: var(--text-sec);
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* ── Loading ─────────────────────────────────────────────────── */
-._dash-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 300px;
-}
-
 /* ── Footer ──────────────────────────────────────────────────── */
 #footer {
-  background: var(--bg-mid);
+  background: var(--bg-panel);
   border-top: 1px solid var(--border);
-  padding: 5px 20px;
+  padding: 4px 16px;
   font-size: 9px;
   color: var(--text-dim);
   display: flex;
   justify-content: space-between;
   flex-shrink: 0;
-  letter-spacing: 0.02em;
 }
 
 /* ── Scrollbar ───────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar       { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-hi); }
 
 /* ── Plotly modebar ──────────────────────────────────────────── */
 .modebar { background: transparent !important; }
 .modebar-btn path { fill: var(--text-dim) !important; }
 .modebar-btn:hover path { fill: var(--gold) !important; }
-
-/* ── Misc helpers ────────────────────────────────────────────── */
-.text-gold   { color: var(--gold); }
-.text-muted  { color: var(--text-muted); }
-.font-mono   { font-family: var(--font-mono); }

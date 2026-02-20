@@ -15,11 +15,11 @@ PARTY_COLORS = {"Democrat": "#3b82f6", "Republican": "#ef4444"}
 BUY_COLOR    = "#22c55e"   # green
 SELL_COLOR   = "#ef4444"   # red
 
-CHART_BG     = "#080e1a"
-PAPER_BG     = "#080e1a"
-GRID_COLOR   = "#1c2e4a"
-TEXT_COLOR   = "#dce6f5"
-GOLD         = "#d4a843"
+CHART_BG   = "#06090f"
+PAPER_BG   = "#06090f"
+GRID_COLOR = "#1e2a36"
+TEXT_COLOR = "#e2e8f0"
+GOLD       = "#f0c040"
 
 # Marker symbol size is scaled by trade amount — this sets the min/max px
 MARKER_MIN_PX = 8
@@ -289,24 +289,24 @@ from dash import callback, Input, Output, State  # noqa: E402
     Output("timeline-ticker-select", "options"),
     Output("timeline-ticker-select", "value"),
     Input("timeline-politician-select", "value"),
-    State("store-filtered-trades", "data"),
+    Input("store-filtered-trades", "data"),
 )
 def update_ticker_options(politician: str, store_data: str):
     """Populate the ticker dropdown with tickers traded by the selected politician."""
-    import json
-    if not store_data or not politician:
+    import data.state as _state
+
+    # Use store data if available, else fall back to shared state
+    if store_data and politician:
+        df = pd.read_json(store_data, orient="split")
+    elif politician and not _state.trades_df.empty:
+        df = _state.trades_df
+    else:
         return [], None
 
-    df = pd.read_json(store_data, orient="split")
-    df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
-
-    tickers = (
+    tickers = sorted(
         df[df["Representative"] == politician]["Ticker"]
-        .dropna()
-        .unique()
-        .tolist()
+        .dropna().unique().tolist()
     )
-    tickers = sorted(tickers)
     options = [{"label": t, "value": t} for t in tickers]
     default = tickers[0] if tickers else None
     return options, default
@@ -316,17 +316,23 @@ def update_ticker_options(politician: str, store_data: str):
     Output("timeline-chart", "figure"),
     Input("timeline-politician-select", "value"),
     Input("timeline-ticker-select", "value"),
-    State("store-filtered-trades", "data"),
+    Input("store-filtered-trades", "data"),
 )
 def update_timeline(politician: str, ticker: str, store_data: str):
     """Re-render the timeline chart when politician or ticker changes."""
-    import data.state as _state  # shared prices_df — avoids circular import with app.py
+    import data.state as _state
 
-    if not store_data or not politician or not ticker:
+    if not politician or not ticker:
         return go.Figure(layout={"paper_bgcolor": PAPER_BG, "plot_bgcolor": CHART_BG})
 
-    df = pd.read_json(store_data, orient="split")
-    df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
-    df["AmountMidpoint"] = pd.to_numeric(df["AmountMidpoint"], errors="coerce").fillna(0)
+    # Use store data if available, else fall back to shared state
+    if store_data:
+        df = pd.read_json(store_data, orient="split")
+        df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
+        df["AmountMidpoint"] = pd.to_numeric(df["AmountMidpoint"], errors="coerce").fillna(0)
+    elif not _state.trades_df.empty:
+        df = _state.trades_df.copy()
+    else:
+        return go.Figure(layout={"paper_bgcolor": PAPER_BG, "plot_bgcolor": CHART_BG})
 
     return make_timeline_figure(politician, ticker, df, _state.prices_df)
