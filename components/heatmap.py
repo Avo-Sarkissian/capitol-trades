@@ -13,8 +13,8 @@ from dash import dcc, html, callback, Input, Output, State
 
 CHART_BG  = "#0a1628"
 PAPER_BG  = "#0a1628"
-GRID_COLOR = "#1e3358"
-TEXT_COLOR = "#e8edf5"
+GRID_COLOR = "#1c2e4a"
+TEXT_COLOR = "#dce6f5"
 GOLD      = "#d4a843"
 
 

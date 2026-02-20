@@ -63,7 +63,11 @@ import components.leaderboard as _lb   # noqa: F401, E402
 
 # ── Derived lists for dropdowns ────────────────────────────────────────────────
 ALL_POLITICIANS = sorted(trades_df["Representative"].dropna().unique().tolist())
-ALL_SECTORS     = sorted(trades_df["Sector"].dropna().unique().tolist())
+ALL_SECTORS     = sorted([s for s in trades_df["Sector"].dropna().unique() if s != "Unknown"])
+
+# Date bounds for the date inputs (pre-formatted as YYYY-MM-DD strings)
+DATE_MIN = trades_df["TransactionDate"].min().strftime("%Y-%m-%d")
+DATE_MAX = trades_df["TransactionDate"].max().strftime("%Y-%m-%d")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # APP INITIALIZATION
@@ -72,7 +76,6 @@ ALL_SECTORS     = sorted(trades_df["Sector"].dropna().unique().tolist())
 app = Dash(
     __name__,
     title="Capitol Trades",
-    # Suppress callback exceptions for components that load dynamically
     suppress_callback_exceptions=True,
 )
 
@@ -85,133 +88,125 @@ def build_sidebar() -> html.Div:
     return html.Div(
         id="sidebar",
         children=[
-            html.Div("Filters", className="sidebar-section-title"),
 
-            # ── Politician selector ────────────────────────────
-            html.Label("Politician(s)", className="filter-label"),
-            dcc.Dropdown(
-                id="filter-politicians",
-                options=[{"label": p, "value": p} for p in ALL_POLITICIANS],
-                multi=True,
-                placeholder="All politicians",
-                style={"marginBottom": "10px"},
-            ),
+            # ── Politician ────────────────────────────────────────
+            html.Div(className="sidebar-section", children=[
+                html.Div("Politician", className="sidebar-section-title"),
+                dcc.Dropdown(
+                    id="filter-politicians",
+                    options=[{"label": p, "value": p} for p in ALL_POLITICIANS],
+                    multi=True,
+                    placeholder="All politicians",
+                    optionHeight=30,
+                ),
+            ]),
 
-            # ── Party ─────────────────────────────────────────
-            html.Label("Party", className="filter-label"),
-            dcc.Dropdown(
-                id="filter-party",
-                options=[
-                    {"label": "Both", "value": "Both"},
-                    {"label": "Democrat", "value": "Democrat"},
-                    {"label": "Republican", "value": "Republican"},
-                ],
-                value="Both",
-                clearable=False,
-                style={"marginBottom": "10px"},
-            ),
+            # ── Party ─────────────────────────────────────────────
+            html.Div(className="sidebar-section", children=[
+                html.Div("Party", className="sidebar-section-title"),
+                dcc.RadioItems(
+                    id="filter-party",
+                    options=[
+                        {"label": "Both",       "value": "Both"},
+                        {"label": "Democrat",   "value": "Democrat"},
+                        {"label": "Republican", "value": "Republican"},
+                    ],
+                    value="Both",
+                    className="radio-pill",
+                    inputStyle={"display": "none"},
+                ),
+            ]),
 
-            # ── Chamber ───────────────────────────────────────
-            html.Label("Chamber", className="filter-label"),
-            dcc.Dropdown(
-                id="filter-chamber",
-                options=[
-                    {"label": "Both", "value": "Both"},
-                    {"label": "House", "value": "House"},
-                    {"label": "Senate", "value": "Senate"},
-                ],
-                value="Both",
-                clearable=False,
-                style={"marginBottom": "10px"},
-            ),
+            # ── Chamber ───────────────────────────────────────────
+            html.Div(className="sidebar-section", children=[
+                html.Div("Chamber", className="sidebar-section-title"),
+                dcc.RadioItems(
+                    id="filter-chamber",
+                    options=[
+                        {"label": "Both",   "value": "Both"},
+                        {"label": "House",  "value": "House"},
+                        {"label": "Senate", "value": "Senate"},
+                    ],
+                    value="Both",
+                    className="radio-pill",
+                    inputStyle={"display": "none"},
+                ),
+            ]),
 
-            # ── Sector ────────────────────────────────────────
-            html.Label("Sector(s)", className="filter-label"),
-            dcc.Dropdown(
-                id="filter-sectors",
-                options=[{"label": s, "value": s} for s in ALL_SECTORS],
-                multi=True,
-                placeholder="All sectors",
-                style={"marginBottom": "10px"},
-            ),
+            # ── Sector ────────────────────────────────────────────
+            html.Div(className="sidebar-section", children=[
+                html.Div("Sector", className="sidebar-section-title"),
+                dcc.Dropdown(
+                    id="filter-sectors",
+                    options=[{"label": s, "value": s} for s in ALL_SECTORS],
+                    multi=True,
+                    placeholder="All sectors",
+                    optionHeight=30,
+                ),
+            ]),
 
-            # ── Date range ────────────────────────────────────
-            html.Label("Date Range", className="filter-label"),
-            dcc.DatePickerRange(
-                id="filter-dates",
-                min_date_allowed=trades_df["TransactionDate"].min().date(),
-                max_date_allowed=trades_df["TransactionDate"].max().date(),
-                start_date=trades_df["TransactionDate"].min().date(),
-                end_date=trades_df["TransactionDate"].max().date(),
-                display_format="MM/DD/YY",
-                style={"marginBottom": "10px", "width": "100%"},
-            ),
+            # ── Date Range ────────────────────────────────────────
+            html.Div(className="sidebar-section", children=[
+                html.Div("Date Range", className="sidebar-section-title"),
+                html.Div(className="date-row", children=[
+                    dcc.Input(
+                        id="filter-start-date",
+                        type="date",
+                        value=DATE_MIN,
+                        min=DATE_MIN,
+                        max=DATE_MAX,
+                    ),
+                    html.Span("→"),
+                    dcc.Input(
+                        id="filter-end-date",
+                        type="date",
+                        value=DATE_MAX,
+                        min=DATE_MIN,
+                        max=DATE_MAX,
+                    ),
+                ]),
+            ]),
 
-            # ── Min trade size ────────────────────────────────
-            html.Label("Min Trade Size", className="filter-label"),
-            dcc.Dropdown(
-                id="filter-min-amount",
-                options=[
-                    {"label": "Any size",       "value": 0},
-                    {"label": "$1K+",           "value": 1_000},
-                    {"label": "$15K+",          "value": 15_000},
-                    {"label": "$50K+",          "value": 50_000},
-                    {"label": "$100K+",         "value": 100_000},
-                    {"label": "$250K+",         "value": 250_000},
-                    {"label": "$500K+",         "value": 500_000},
-                    {"label": "$1M+",           "value": 1_000_000},
-                ],
-                value=0,
-                clearable=False,
-                style={"marginBottom": "10px"},
-            ),
+            # ── Min Trade Size ────────────────────────────────────
+            html.Div(className="sidebar-section", children=[
+                html.Div("Min Trade Size", className="sidebar-section-title"),
+                dcc.Dropdown(
+                    id="filter-min-amount",
+                    options=[
+                        {"label": "Any size", "value": 0},
+                        {"label": "$15K+",    "value": 15_000},
+                        {"label": "$50K+",    "value": 50_000},
+                        {"label": "$100K+",   "value": 100_000},
+                        {"label": "$250K+",   "value": 250_000},
+                        {"label": "$500K+",   "value": 500_000},
+                        {"label": "$1M+",     "value": 1_000_000},
+                    ],
+                    value=0,
+                    clearable=False,
+                    optionHeight=30,
+                ),
+            ]),
 
-            # ── Stats mini-panel ──────────────────────────────
-            html.Hr(style={"borderColor": "#1e3358", "margin": "8px 0"}),
-            html.Div(id="sidebar-stats", style={"fontSize": "11px", "color": "#7a90b0"}),
+            # ── Stats strip ───────────────────────────────────────
+            html.Div(className="sidebar-section", children=[
+                html.Div(id="sidebar-stats"),
+            ]),
         ],
     )
 
 
 def build_tabs() -> dcc.Tabs:
-    """Build the main tab strip and content panels."""
-    tab_style = {"padding": "8px 14px"}
-
+    """Build the main tab strip."""
     return dcc.Tabs(
         id="main-tabs",
         value="tab-timeline",
         className="custom-tabs",
         children=[
-            dcc.Tab(
-                label="Trade Timeline",
-                value="tab-timeline",
-                style=tab_style,
-                selected_style=tab_style,
-            ),
-            dcc.Tab(
-                label="Sector Heatmap",
-                value="tab-heatmap",
-                style=tab_style,
-                selected_style=tab_style,
-            ),
-            dcc.Tab(
-                label="Alpha Scatter",
-                value="tab-scatter",
-                style=tab_style,
-                selected_style=tab_style,
-            ),
-            dcc.Tab(
-                label="Committee Network",
-                value="tab-network",
-                style=tab_style,
-                selected_style=tab_style,
-            ),
-            dcc.Tab(
-                label="Leaderboard",
-                value="tab-leaderboard",
-                style=tab_style,
-                selected_style=tab_style,
-            ),
+            dcc.Tab(label="Trade Timeline",    value="tab-timeline"),
+            dcc.Tab(label="Sector Heatmap",    value="tab-heatmap"),
+            dcc.Tab(label="Alpha Scatter",     value="tab-scatter"),
+            dcc.Tab(label="Committee Network", value="tab-network"),
+            dcc.Tab(label="Leaderboard",       value="tab-leaderboard"),
         ],
     )
 
@@ -220,7 +215,7 @@ app.layout = html.Div(
     id="app-wrapper",
     children=[
 
-        # ── Header ────────────────────────────────────────────
+        # ── Header ────────────────────────────────────────────────
         html.Div(
             id="header",
             children=[
@@ -229,11 +224,11 @@ app.layout = html.Div(
                     "Congressional Stock Trading Intelligence Dashboard",
                     id="header-subtitle",
                 ),
-                html.Span("LIVE DATA ●", id="header-badge"),
+                html.Span("LIVE DATA", id="header-badge"),
             ],
         ),
 
-        # ── Body (sidebar + tabs) ──────────────────────────────
+        # ── Body ──────────────────────────────────────────────────
         html.Div(
             id="body-layout",
             children=[
@@ -243,7 +238,6 @@ app.layout = html.Div(
                     id="main-content",
                     children=[
                         build_tabs(),
-                        # Tab content rendered dynamically by callback below
                         dcc.Loading(
                             id="tab-loading",
                             type="circle",
@@ -255,16 +249,16 @@ app.layout = html.Div(
             ],
         ),
 
-        # ── Footer ────────────────────────────────────────────
+        # ── Footer ────────────────────────────────────────────────
         html.Div(
             id="footer",
             children=[
-                html.Span("Data: Quiver Quantitative (congressional disclosures) + Yahoo Finance (prices)"),
+                html.Span("Data: Quiver Quantitative (congressional disclosures) + Yahoo Finance (market prices)"),
                 html.Span("Disclosure lag may affect alpha calculations · Not financial advice"),
             ],
         ),
 
-        # ── Global data store (holds filtered trades as JSON) ──
+        # ── Global data store ─────────────────────────────────────
         dcc.Store(id="store-filtered-trades"),
     ],
 )
@@ -276,13 +270,13 @@ app.layout = html.Div(
 @callback(
     Output("store-filtered-trades", "data"),
     Output("sidebar-stats", "children"),
-    Input("filter-politicians", "value"),
-    Input("filter-party", "value"),
-    Input("filter-chamber", "value"),
-    Input("filter-sectors", "value"),
-    Input("filter-dates", "start_date"),
-    Input("filter-dates", "end_date"),
-    Input("filter-min-amount", "value"),
+    Input("filter-politicians",  "value"),
+    Input("filter-party",        "value"),
+    Input("filter-chamber",      "value"),
+    Input("filter-sectors",      "value"),
+    Input("filter-start-date",   "value"),
+    Input("filter-end-date",     "value"),
+    Input("filter-min-amount",   "value"),
 )
 def update_store(politicians, party, chamber, sectors, start_date, end_date, min_amount):
     """
@@ -302,18 +296,26 @@ def update_store(politicians, party, chamber, sectors, start_date, end_date, min
         min_amount=float(min_amount) if min_amount else 0,
     )
 
-    # Sidebar mini-stats
-    n_trades     = len(filtered)
+    n_trades      = len(filtered)
     n_politicians = filtered["Representative"].nunique()
-    total_vol    = filtered["AmountMidpoint"].sum()
+    total_vol     = filtered["AmountMidpoint"].sum()
 
+    # Three tidy stat chips in the sidebar
     stats = [
-        html.Div(f"{n_trades:,} trades", style={"fontWeight": "bold", "color": "#d4a843"}),
-        html.Div(f"{n_politicians} politicians"),
-        html.Div(f"Est. vol: ${total_vol/1e6:.1f}M"),
+        html.Div(className="stat-chip", children=[
+            html.Span("Trades",     className="stat-chip-label"),
+            html.Span(f"{n_trades:,}", className="stat-chip-value"),
+        ]),
+        html.Div(className="stat-chip", children=[
+            html.Span("Politicians",      className="stat-chip-label"),
+            html.Span(str(n_politicians), className="stat-chip-value"),
+        ]),
+        html.Div(className="stat-chip", children=[
+            html.Span("Est. Volume",             className="stat-chip-label"),
+            html.Span(f"${total_vol/1e6:.1f}M",  className="stat-chip-value"),
+        ]),
     ]
 
-    # Serialize dates for JSON store
     out = filtered.copy()
     out["TransactionDate"] = out["TransactionDate"].astype(str)
     return out.to_json(date_format="iso", orient="split"), stats
@@ -332,13 +334,11 @@ def render_tab(tab_value: str, store_data: str):
     from components.network     import build_network_tab
     from components.leaderboard import build_leaderboard_tab
 
-    # Parse stored JSON back to DataFrame
     if store_data:
         df = pd.read_json(store_data, orient="split")
         df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
     else:
         df = trades_df.copy()
-        df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
 
     dispatch = {
         "tab-timeline":    build_timeline_tab,

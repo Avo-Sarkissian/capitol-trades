@@ -1,250 +1,468 @@
 /* ═══════════════════════════════════════════════════════════════
-   Capitol Trades — Global Stylesheet
-   Dark navy theme with gold accents. Bloomberg-terminal aesthetic.
+   Capitol Trades — UI v2
+   Dark financial terminal aesthetic. Clean, dense, fast.
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── CSS Variables (color tokens) ───────────────────────────── */
+/* ── Tokens ──────────────────────────────────────────────────── */
 :root {
-  --bg-dark:      #0a1628;   /* deepest background */
-  --bg-mid:       #0f1f3d;   /* panel / sidebar bg */
-  --bg-card:      #152040;   /* card / chart bg */
-  --bg-hover:     #1a2a50;   /* hover state */
-  --border:       #1e3358;   /* subtle borders */
+  --bg:         #080e1a;
+  --bg-mid:     #0d1829;
+  --bg-card:    #111e35;
+  --bg-hover:   #162440;
+  --border:     #1c2e4a;
+  --border-hi:  #2a4070;
 
-  --gold:         #d4a843;   /* primary accent */
-  --gold-light:   #e8c76a;   /* lighter gold for hover */
-  --gold-dim:     #8a6b22;   /* dimmed gold */
+  --gold:       #d4a843;
+  --gold-hi:    #e8c76a;
+  --gold-dim:   #7a5e1e;
+  --gold-bg:    rgba(212,168,67,0.10);
 
-  --text-primary: #e8edf5;   /* main text */
-  --text-muted:   #7a90b0;   /* secondary/muted text */
-  --text-label:   #a0b4cc;   /* filter labels */
+  --text:       #dce6f5;
+  --text-muted: #6b849e;
+  --text-dim:   #3a5070;
 
-  --dem-blue:     #3b82f6;   /* Democrat color */
-  --rep-red:      #ef4444;   /* Republican color */
+  --dem:        #3b82f6;
+  --rep:        #ef4444;
+  --green:      #22c55e;
 
-  --font-main:    'IBM Plex Mono', 'Courier New', monospace;
-  --font-ui:      'Inter', 'Segoe UI', system-ui, sans-serif;
+  --r:          5px;      /* border-radius token */
+  --font-mono:  'IBM Plex Mono', 'Courier New', monospace;
+  --font-ui:    'Inter', system-ui, sans-serif;
+  --transition: 0.15s ease;
 }
 
-/* ── Reset & Base ────────────────────────────────────────────── */
+/* ── Reset ───────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background-color: var(--bg-dark);
-  color: var(--text-primary);
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.5;
-  overflow: hidden;          /* full-viewport app, no page scroll */
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
 }
 
-/* ── App wrapper ─────────────────────────────────────────────── */
+/* ── App shell ───────────────────────────────────────────────── */
 #app-wrapper {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  overflow: hidden;
 }
 
 /* ── Header ──────────────────────────────────────────────────── */
 #header {
   background: var(--bg-mid);
   border-bottom: 1px solid var(--border);
-  padding: 10px 20px;
+  padding: 0 20px;
+  height: 48px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex-shrink: 0;
-}
-
-#header-logo {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--gold);
-  font-family: var(--font-main);
-  letter-spacing: 0.05em;
-}
-
-#header-subtitle {
-  color: var(--text-muted);
-  font-size: 12px;
-  border-left: 1px solid var(--border);
-  padding-left: 16px;
-}
-
-#header-badge {
-  margin-left: auto;
-  font-size: 10px;
-  color: var(--gold-dim);
-  font-family: var(--font-main);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-/* ── Body layout (sidebar + main) ───────────────────────────── */
-#body-layout {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-/* ── Sidebar ─────────────────────────────────────────────────── */
-#sidebar {
-  width: 250px;
-  min-width: 250px;
-  background: var(--bg-mid);
-  border-right: 1px solid var(--border);
-  padding: 16px 12px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
   gap: 14px;
   flex-shrink: 0;
 }
 
-.sidebar-section-title {
-  font-size: 9px;
-  font-family: var(--font-main);
+#header-logo {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
   color: var(--gold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  margin-bottom: 6px;
-  padding-bottom: 4px;
+  white-space: nowrap;
+}
+
+#header-subtitle {
+  color: var(--text-muted);
+  font-size: 11px;
+  padding-left: 14px;
+  border-left: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#header-badge {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--green);
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+#header-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ── Body ────────────────────────────────────────────────────── */
+#body-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+#sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: var(--bg-mid);
+  border-right: 1px solid var(--border);
+  padding: 12px 10px 16px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.sidebar-section {
+  padding: 10px 0 6px;
   border-bottom: 1px solid var(--border);
 }
 
-.filter-label {
-  font-size: 11px;
-  color: var(--text-label);
-  margin-bottom: 4px;
-  display: block;
+.sidebar-section:last-child { border-bottom: none; }
+
+.sidebar-section-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--gold-dim);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-/* Style Dash dropdown components */
+.sidebar-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.filter-label {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+}
+
+/* ── Radio pills (Party / Chamber) ──────────────────────────── */
+.radio-pill {
+  display: flex;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--bg-card);
+  margin-bottom: 10px;
+}
+
+/* Each option wrapper */
+.radio-pill > div {
+  flex: 1;
+  position: relative;
+}
+
+/* Hide the actual radio input */
+.radio-pill input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* The visible label */
+.radio-pill label {
+  display: block;
+  text-align: center;
+  padding: 5px 2px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border-right: 1px solid var(--border);
+  transition: background var(--transition), color var(--transition);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.radio-pill > div:last-child label { border-right: none; }
+
+.radio-pill input[type="radio"]:checked + label {
+  background: var(--gold-bg);
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.radio-pill label:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+/* ── Date inputs ─────────────────────────────────────────────── */
+.date-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.date-row span {
+  color: var(--text-dim);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+input[type="date"] {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text);
+  padding: 5px 6px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: border-color var(--transition);
+  color-scheme: dark;
+}
+
+input[type="date"]:hover  { border-color: var(--border-hi); }
+input[type="date"]:focus  { outline: none; border-color: var(--gold-dim); }
+
+/* ── Dash Dropdown (dcc.Dropdown) ────────────────────────────── */
+/* Container */
+.Select, .VirtualizedSelect {
+  font-size: 11px !important;
+  margin-bottom: 8px;
+}
+
+/* The visible control bar */
 .Select-control {
   background-color: var(--bg-card) !important;
   border: 1px solid var(--border) !important;
-  border-radius: 4px !important;
-  color: var(--text-primary) !important;
-  font-size: 12px !important;
+  border-radius: var(--r) !important;
+  min-height: 30px !important;
+  height: auto !important;
+  transition: border-color var(--transition) !important;
+  cursor: pointer !important;
 }
 
+.Select-control:hover { border-color: var(--border-hi) !important; }
+
+.is-focused .Select-control,
+.is-open .Select-control {
+  border-color: var(--gold-dim) !important;
+  box-shadow: 0 0 0 2px rgba(212,168,67,0.1) !important;
+}
+
+/* Value text */
+.Select-value-label  { color: var(--text) !important; font-size: 11px !important; }
+.Select-placeholder  { color: var(--text-dim) !important; font-size: 11px !important; }
+
+/* Input field inside */
+.Select-input input  { color: var(--text) !important; background: transparent !important; }
+
+/* Arrow */
+.Select-arrow-zone   { color: var(--text-muted) !important; }
+.Select-arrow        { border-top-color: var(--text-muted) !important; }
+.is-open .Select-arrow { border-bottom-color: var(--text-muted) !important; }
+
+/* Clear button */
+.Select-clear-zone   { color: var(--text-muted) !important; }
+.Select-clear-zone:hover { color: var(--text) !important; }
+
+/* Dropdown menu panel */
 .Select-menu-outer {
   background-color: var(--bg-card) !important;
-  border: 1px solid var(--border) !important;
-  z-index: 999 !important;
+  border: 1px solid var(--border-hi) !important;
+  border-radius: 0 0 var(--r) var(--r) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+  z-index: 9999 !important;
 }
 
+.Select-menu { background: var(--bg-card) !important; }
+
+/* Individual options */
 .Select-option {
   background-color: var(--bg-card) !important;
-  color: var(--text-primary) !important;
-  font-size: 12px !important;
+  color: var(--text) !important;
+  font-size: 11px !important;
+  padding: 7px 10px !important;
+  cursor: pointer !important;
 }
 
 .Select-option:hover,
-.Select-option.is-focused {
-  background-color: var(--bg-hover) !important;
-}
+.Select-option.is-focused  { background-color: var(--bg-hover) !important; }
+.Select-option.is-selected { background-color: var(--gold-bg) !important; color: var(--gold) !important; }
+.Select-option.is-disabled { color: var(--text-dim) !important; }
 
-.Select-value-label { color: var(--text-primary) !important; }
-
-.Select-multi-value-wrapper { padding: 2px !important; }
+/* Multi-value chips */
+.Select-multi-value-wrapper { padding: 2px 4px 2px 2px !important; gap: 2px !important; display: flex !important; flex-wrap: wrap !important; }
 
 .Select-value {
   background-color: var(--bg-hover) !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text-primary) !important;
+  border: 1px solid var(--border-hi) !important;
   border-radius: 3px !important;
-  font-size: 11px !important;
+  color: var(--text) !important;
+  font-size: 10px !important;
+  margin: 2px 2px !important;
+  line-height: 1.4 !important;
 }
 
-/* Date picker */
-.DateInput_input {
-  background-color: var(--bg-card) !important;
-  color: var(--text-primary) !important;
-  font-size: 12px !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 4px !important;
-  padding: 4px 8px !important;
+.Select-value-icon {
+  border-right: 1px solid var(--border-hi) !important;
+  color: var(--text-muted) !important;
+  padding: 1px 4px !important;
 }
 
-.DateRangePickerInput {
-  background-color: var(--bg-card) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 4px !important;
+.Select-value-icon:hover { background: var(--bg-card) !important; color: var(--text) !important; }
+
+/* ── Sidebar stats strip ─────────────────────────────────────── */
+#sidebar-stats {
+  margin-top: 2px;
+  padding: 10px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
-/* ── Main content area ───────────────────────────────────────── */
+.stat-chip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+}
+
+.stat-chip-label { color: var(--text-muted); font-size: 9px; letter-spacing: 0.04em; }
+.stat-chip-value { color: var(--gold); font-family: var(--font-mono); font-size: 11px; font-weight: 600; }
+
+/* ── Main content ────────────────────────────────────────────── */
 #main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--bg-dark);
+  min-width: 0;
 }
 
 /* ── Tabs ────────────────────────────────────────────────────── */
-.dash-tabs {
+/* Strip container */
+.custom-tabs {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-/* Tab strip */
-.custom-tabs .tab {
+/* The tab strip itself */
+.custom-tabs > .tab-container,
+.custom-tabs [role="tablist"] {
   background: var(--bg-mid) !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text-muted) !important;
-  font-size: 11px !important;
-  font-family: var(--font-main) !important;
-  letter-spacing: 0.04em !important;
-  padding: 8px 16px !important;
-  border-bottom: none !important;
-  border-radius: 0 !important;
-  text-transform: uppercase;
+  border-bottom: 1px solid var(--border) !important;
+  display: flex !important;
+  padding: 0 4px !important;
+  flex-shrink: 0;
 }
 
-.custom-tabs .tab--selected {
-  background: var(--bg-dark) !important;
-  color: var(--gold) !important;
-  border-top: 2px solid var(--gold) !important;
-  border-bottom: none !important;
+/* Individual tabs */
+.custom-tabs .tab {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.07em !important;
+  text-transform: uppercase !important;
+  padding: 10px 16px !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  color: var(--text-muted) !important;
+  cursor: pointer !important;
+  transition: color var(--transition), border-color var(--transition) !important;
+  margin-bottom: -1px !important;
+  white-space: nowrap !important;
 }
 
 .custom-tabs .tab:hover {
-  color: var(--gold-light) !important;
+  color: var(--text) !important;
   background: var(--bg-hover) !important;
 }
 
-/* Tab content panels */
+.custom-tabs .tab--selected {
+  color: var(--gold) !important;
+  border-bottom-color: var(--gold) !important;
+  background: transparent !important;
+}
+
+/* Tab content area */
 .tab-content {
   flex: 1;
   overflow: hidden;
-  padding: 16px;
-  background: var(--bg-dark);
+  padding: 14px 16px;
 }
 
-/* ── Charts / Plotly ─────────────────────────────────────────── */
-.plotly-graph-div {
-  width: 100% !important;
+/* ── Chart controls row ──────────────────────────────────────── */
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
 }
 
-/* Plotly tooltip */
-.hoverlayer .hovertext {
-  fill: var(--bg-mid) !important;
+.chart-controls .filter-label {
+  margin-bottom: 0;
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-size: 10px;
 }
 
-/* ── Cards ───────────────────────────────────────────────────── */
+/* Make dropdowns inside chart-controls inline */
+.chart-controls .Select { margin-bottom: 0 !important; }
+
+/* ── Summary stat cards (leaderboard) ───────────────────────── */
 .stat-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px 16px;
+  border-radius: var(--r);
+  padding: 10px 14px;
+  transition: border-color var(--transition);
 }
 
+.stat-card:hover { border-color: var(--border-hi); }
+
 .stat-card-label {
-  font-size: 10px;
-  font-family: var(--font-main);
+  font-family: var(--font-mono);
+  font-size: 9px;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -252,55 +470,55 @@ body {
 }
 
 .stat-card-value {
-  font-size: 20px;
+  font-family: var(--font-mono);
+  font-size: 18px;
   font-weight: 700;
-  font-family: var(--font-main);
   color: var(--gold);
+  line-height: 1.1;
 }
 
 .stat-card-sub {
   font-size: 10px;
   color: var(--text-muted);
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* ── Loading spinner ─────────────────────────────────────────── */
+/* ── Loading ─────────────────────────────────────────────────── */
 ._dash-loading {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  height: 300px;
 }
-
-.dash-spinner {
-  border: 3px solid var(--border) !important;
-  border-top-color: var(--gold) !important;
-}
-
-/* ── Scrollbar ───────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-dark); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
 
 /* ── Footer ──────────────────────────────────────────────────── */
 #footer {
   background: var(--bg-mid);
   border-top: 1px solid var(--border);
-  padding: 6px 20px;
-  font-size: 10px;
-  color: var(--text-muted);
+  padding: 5px 20px;
+  font-size: 9px;
+  color: var(--text-dim);
   display: flex;
   justify-content: space-between;
   flex-shrink: 0;
+  letter-spacing: 0.02em;
 }
 
-/* ── Party color helpers (used inline by charts) ─────────────── */
-.dem  { color: var(--dem-blue); }
-.rep  { color: var(--rep-red); }
-.gold { color: var(--gold); }
+/* ── Scrollbar ───────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-hi); }
 
-/* ── Responsive guard ────────────────────────────────────────── */
-@media (max-width: 900px) {
-  #sidebar { width: 200px; min-width: 200px; }
-}
+/* ── Plotly modebar ──────────────────────────────────────────── */
+.modebar { background: transparent !important; }
+.modebar-btn path { fill: var(--text-dim) !important; }
+.modebar-btn:hover path { fill: var(--gold) !important; }
+
+/* ── Misc helpers ────────────────────────────────────────────── */
+.text-gold   { color: var(--gold); }
+.text-muted  { color: var(--text-muted); }
+.font-mono   { font-family: var(--font-mono); }

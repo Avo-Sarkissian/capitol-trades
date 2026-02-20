@@ -15,10 +15,10 @@ PARTY_COLORS = {"Democrat": "#3b82f6", "Republican": "#ef4444"}
 BUY_COLOR    = "#22c55e"   # green
 SELL_COLOR   = "#ef4444"   # red
 
-CHART_BG     = "#0a1628"
-PAPER_BG     = "#0a1628"
-GRID_COLOR   = "#1e3358"
-TEXT_COLOR   = "#e8edf5"
+CHART_BG     = "#080e1a"
+PAPER_BG     = "#080e1a"
+GRID_COLOR   = "#1c2e4a"
+TEXT_COLOR   = "#dce6f5"
 GOLD         = "#d4a843"
 
 # Marker symbol size is scaled by trade amount — this sets the min/max px
@@ -63,27 +63,39 @@ def build_timeline_tab(trades_df: pd.DataFrame, prices_df: pd.DataFrame) -> html
 
     default_pol = top_politicians[0]
 
-    pol_options = [{"label": p, "value": p} for p in top_politicians]
+    # Pre-populate ticker options for the default politician so the chart
+    # renders immediately without waiting for a callback round-trip.
+    default_tickers = sorted(
+        trades_df[trades_df["Representative"] == default_pol]["Ticker"]
+        .dropna().unique().tolist()
+    )
+    default_ticker = default_tickers[0] if default_tickers else None
+
+    pol_options    = [{"label": p, "value": p} for p in top_politicians]
+    ticker_options = [{"label": t, "value": t} for t in default_tickers]
 
     return html.Div([
-        # ── Controls row ──────────────────────────────────────
+        # ── Controls bar ──────────────────────────────────────
         html.Div(
-            style={"display": "flex", "gap": "16px", "alignItems": "center", "marginBottom": "12px"},
+            className="chart-controls",
             children=[
-                html.Label("Focus politician:", style={"color": "#a0b4cc", "fontSize": "12px"}),
+                html.Label("Politician", className="filter-label"),
                 dcc.Dropdown(
                     id="timeline-politician-select",
                     options=pol_options,
                     value=default_pol,
                     clearable=False,
-                    style={"width": "280px", "fontSize": "12px"},
+                    optionHeight=30,
+                    style={"width": "260px"},
                 ),
-                html.Label("Ticker:", style={"color": "#a0b4cc", "fontSize": "12px"}),
+                html.Label("Ticker", className="filter-label", style={"marginLeft": "4px"}),
                 dcc.Dropdown(
                     id="timeline-ticker-select",
-                    options=[],   # populated by callback
+                    options=ticker_options,
+                    value=default_ticker,
                     clearable=False,
-                    style={"width": "160px", "fontSize": "12px"},
+                    optionHeight=30,
+                    style={"width": "130px"},
                 ),
             ],
         ),
