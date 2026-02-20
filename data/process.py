@@ -203,8 +203,10 @@ def calculate_trade_alpha(
     # Normalize sell transactions to negative for net calculations
     df["IsBuy"] = df["Transaction"].str.lower().str.contains("purchase")
 
-    # Ensure prices index is DatetimeIndex
-    prices_df.index = pd.to_datetime(prices_df.index)
+    # Ensure prices index is DatetimeIndex, drop any NaT/NaN index values
+    prices_df = prices_df.copy()
+    prices_df.index = pd.to_datetime(prices_df.index, errors="coerce")
+    prices_df = prices_df[prices_df.index.notna()]  # drop rows with unparseable dates
     price_dates = prices_df.index
 
     for window in windows:

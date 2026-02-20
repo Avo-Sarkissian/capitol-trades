@@ -257,6 +257,9 @@ def fetch_stock_prices(
     cached_df = None
     if _cache_is_fresh(cache_path):
         cached_df = pd.read_csv(cache_path, index_col=0, parse_dates=True)
+        # Drop any rows where the index failed to parse as a date (shows up as NaN float)
+        cached_df.index = pd.to_datetime(cached_df.index, errors="coerce")
+        cached_df = cached_df[cached_df.index.notna()]
         # Check if all requested tickers are already in the cache
         missing = [t for t in tickers if t not in cached_df.columns]
         if not missing:
@@ -293,10 +296,16 @@ def fetch_stock_prices(
         return cached_df if cached_df is not None else pd.DataFrame()
 
     new_df = pd.DataFrame(frames)
+    # Ensure new_df index is a clean, unique DatetimeIndex
+    new_df.index = pd.to_datetime(new_df.index, errors="coerce")
+    new_df = new_df[new_df.index.notna()]
+    new_df = new_df[~new_df.index.duplicated(keep="last")]
 
     # Merge with existing cache if we had one
     if cached_df is not None:
-        result = cached_df.join(new_df, how="outer")
+        # Deduplicate cache index too, then combine
+        cached_df = cached_df[~cached_df.index.duplicated(keep="last")]
+        result = cached_df.combine_first(new_df)
     else:
         result = new_df
 
