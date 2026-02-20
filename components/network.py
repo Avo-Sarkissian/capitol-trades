@@ -7,6 +7,7 @@ Highlights potential conflicts of interest.
 """
 
 from __future__ import annotations
+from io import StringIO
 
 import numpy as np
 import pandas as pd
@@ -310,7 +311,7 @@ def update_network(store_data: str):
     """Redraw the network when filters change."""
     if not store_data:
         return _empty_fig("No data.")
-    df = pd.read_json(store_data, orient="split")
+    df = pd.read_json(StringIO(store_data), orient="split")
     df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
     df["AmountMidpoint"]  = pd.to_numeric(df["AmountMidpoint"], errors="coerce").fillna(0)
     return make_network_figure(df)

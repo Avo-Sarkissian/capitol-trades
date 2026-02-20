@@ -5,6 +5,7 @@ Green = net buying, Red = net selling, White = neutral.
 """
 
 from __future__ import annotations
+from io import StringIO
 
 import pandas as pd
 import numpy as np
@@ -203,7 +204,7 @@ def update_heatmap(store_data: str):
     """Redraw the heatmap whenever the global filter store changes."""
     if not store_data:
         return _empty_fig("No data.")
-    df = pd.read_json(store_data, orient="split")
+    df = pd.read_json(StringIO(store_data), orient="split")
     df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
     df["AmountMidpoint"]  = pd.to_numeric(df["AmountMidpoint"], errors="coerce").fillna(0)
     return make_heatmap_figure(df)

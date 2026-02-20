@@ -4,6 +4,7 @@ Tab 1: Trade Timeline — stock price line chart with congressional buy/sell mar
 """
 
 from __future__ import annotations
+from io import StringIO
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -297,7 +298,7 @@ def update_ticker_options(politician: str, store_data: str):
 
     # Use store data if available, else fall back to shared state
     if store_data and politician:
-        df = pd.read_json(store_data, orient="split")
+        df = pd.read_json(StringIO(store_data), orient="split")
     elif politician and not _state.trades_df.empty:
         df = _state.trades_df
     else:
@@ -327,7 +328,7 @@ def update_timeline(politician: str, ticker: str, store_data: str):
 
     # Use store data if available, else fall back to shared state
     if store_data:
-        df = pd.read_json(store_data, orient="split")
+        df = pd.read_json(StringIO(store_data), orient="split")
         df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
         df["AmountMidpoint"] = pd.to_numeric(df["AmountMidpoint"], errors="coerce").fillna(0)
     elif not _state.trades_df.empty:

@@ -5,6 +5,7 @@ X-axis = SPY return, Y-axis = trade return. Dots above the diagonal beat the mar
 """
 
 from __future__ import annotations
+from io import StringIO
 
 import numpy as np
 import pandas as pd
@@ -240,7 +241,7 @@ def update_scatter(window: int, store_data: str):
     if not store_data:
         return _empty_fig("No data."), ""
 
-    df = pd.read_json(store_data, orient="split")
+    df = pd.read_json(StringIO(store_data), orient="split")
     df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
     df["AmountMidpoint"]  = pd.to_numeric(df["AmountMidpoint"], errors="coerce").fillna(0)
 

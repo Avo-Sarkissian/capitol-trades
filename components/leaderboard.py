@@ -4,6 +4,7 @@ Tab 5: Leaderboard — top traders by volume and by alpha, plus summary stats pa
 """
 
 from __future__ import annotations
+from io import StringIO
 
 import pandas as pd
 import numpy as np
@@ -291,7 +292,7 @@ def update_leaderboard(store_data: str):
         empty = _empty_fig("No data.")
         return empty, empty, []
 
-    df = pd.read_json(store_data, orient="split")
+    df = pd.read_json(StringIO(store_data), orient="split")
     df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
     df["AmountMidpoint"]  = pd.to_numeric(df["AmountMidpoint"], errors="coerce").fillna(0)
 

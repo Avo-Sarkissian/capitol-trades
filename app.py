@@ -5,6 +5,7 @@ Keep this file thin — visualization logic lives in components/.
 """
 
 from datetime import datetime, timedelta
+from io import StringIO
 
 import pandas as pd
 from dash import Dash, dcc, html, Input, Output, callback
@@ -288,7 +289,7 @@ def render_tab(tab_value: str, store_data: str):
     from components.leaderboard import build_leaderboard_tab
 
     if store_data:
-        df = pd.read_json(store_data, orient="split")
+        df = pd.read_json(StringIO(store_data), orient="split")
         df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
     else:
         df = trades_df.copy()
