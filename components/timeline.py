@@ -4,23 +4,16 @@ Tab 1: Trade Timeline — stock price line chart with congressional buy/sell mar
 """
 
 from __future__ import annotations
-from io import StringIO
 
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from dash import dcc, html
 
-# ── Color constants ────────────────────────────────────────────────────────────
-PARTY_COLORS = {"Democrat": "#3b82f6", "Republican": "#ef4444"}
-BUY_COLOR    = "#22c55e"   # green
-SELL_COLOR   = "#ef4444"   # red
-
-CHART_BG   = "#06090f"
-PAPER_BG   = "#06090f"
-GRID_COLOR = "#1e2a36"
-TEXT_COLOR = "#e2e8f0"
-GOLD       = "#f0c040"
+from components.constants import (
+    CHART_BG, PAPER_BG, GRID_COLOR, TEXT_COLOR, GOLD,
+    BUY_COLOR, SELL_COLOR, CHART_FONT, empty_fig,
+)
 
 # Marker symbol size is scaled by trade amount — this sets the min/max px
 MARKER_MIN_PX = 8
@@ -40,15 +33,7 @@ def build_timeline_tab(trades_df: pd.DataFrame, prices_df: pd.DataFrame) -> html
     Build the Trade Timeline tab layout.
     Renders an initial figure for the top politician and a politician dropdown
     to switch between subjects.
-
-    Args:
-        trades_df:  Filtered trades DataFrame.
-        prices_df:  Full price DataFrame (all tickers, full date range).
-
-    Returns:
-        html.Div containing the tab UI.
     """
-    # Default to the most-active politician in current filter
     if trades_df.empty:
         return html.Div(
             "No trades match current filters.",
@@ -61,6 +46,12 @@ def build_timeline_tab(trades_df: pd.DataFrame, prices_df: pd.DataFrame) -> html
         .sort_values(ascending=False)
         .index.tolist()
     )
+
+    if not top_politicians:
+        return html.Div(
+            "No politicians found in current filters.",
+            style={"color": "#7a90b0", "padding": "40px", "textAlign": "center"},
+        )
 
     default_pol = top_politicians[0]
 
@@ -122,15 +113,6 @@ def make_timeline_figure(
 ) -> go.Figure:
     """
     Build the price + trade marker figure for one politician / ticker pair.
-
-    Args:
-        politician: Representative name string.
-        ticker:     Stock ticker symbol.
-        trades_df:  Filtered trades DataFrame.
-        prices_df:  Price DataFrame indexed by date, tickers as columns.
-
-    Returns:
-        Plotly Figure with two subplots: price (top) and trade count (bottom).
     """
     # Filter to this politician's trades for this ticker
     mask = (trades_df["Representative"] == politician) & (trades_df["Ticker"] == ticker)
@@ -177,11 +159,17 @@ def make_timeline_figure(
             symbol     = "triangle-up" if is_buy else "triangle-down"
             size       = _scale_marker(row["AmountMidpoint"], amount_min, amount_max)
 
-            # Find price at trade date (nearest available)
+            # Find price at trade date (nearest available, clamped to valid range)
             if not price_series.empty:
-                idx = price_series.index.searchsorted(trade_date)
-                idx = min(idx, len(price_series) - 1)
+                idx = price_series.index.searchsorted(trade_date, side="left")
+                idx = max(0, min(idx, len(price_series) - 1))
+                y_val = price_series.iloc[idx]
+                # If we landed before the trade date and there's a next point, use it
+                if idx < len(price_series) - 1 and price_series.index[idx] < trade_date:
+                    idx += 1
                 y_val = float(price_series.iloc[idx])
+                if pd.isna(y_val):
+                    y_val = 0
             else:
                 y_val = 0
 
@@ -250,7 +238,7 @@ def make_timeline_figure(
     fig.update_layout(
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=CHART_BG,
-        font={"color": TEXT_COLOR, "family": "IBM Plex Mono, monospace", "size": 11},
+        font=CHART_FONT,
         margin={"l": 60, "r": 20, "t": 40, "b": 40},
         legend={
             "orientation": "h",
@@ -281,9 +269,7 @@ def make_timeline_figure(
 
 
 # ── Callbacks ──────────────────────────────────────────────────────────────────
-# Imported by app.py — uses the global trades_df / prices_df via closure
-
-from dash import callback, Input, Output, State  # noqa: E402
+from dash import callback, Input, Output  # noqa: E402
 
 
 @callback(
@@ -296,12 +282,13 @@ def update_ticker_options(politician: str, store_data: str):
     """Populate the ticker dropdown with tickers traded by the selected politician."""
     import data.state as _state
 
-    # Use store data if available, else fall back to shared state
-    if store_data and politician:
-        df = pd.read_json(StringIO(store_data), orient="split")
-    elif politician and not _state.trades_df.empty:
-        df = _state.trades_df
-    else:
+    if not politician:
+        return [], None
+
+    df = _state.deserialize_store(store_data)
+    if df is None:
+        df = _state.trades_df if not _state.trades_df.empty else None
+    if df is None:
         return [], None
 
     tickers = sorted(
@@ -324,16 +311,12 @@ def update_timeline(politician: str, ticker: str, store_data: str):
     import data.state as _state
 
     if not politician or not ticker:
-        return go.Figure(layout={"paper_bgcolor": PAPER_BG, "plot_bgcolor": CHART_BG})
+        return empty_fig("Select a politician and ticker to view trades.")
 
-    # Use store data if available, else fall back to shared state
-    if store_data:
-        df = pd.read_json(StringIO(store_data), orient="split")
-        df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
-        df["AmountMidpoint"] = pd.to_numeric(df["AmountMidpoint"], errors="coerce").fillna(0)
-    elif not _state.trades_df.empty:
-        df = _state.trades_df.copy()
-    else:
-        return go.Figure(layout={"paper_bgcolor": PAPER_BG, "plot_bgcolor": CHART_BG})
+    df = _state.deserialize_store(store_data)
+    if df is None:
+        df = _state.trades_df.copy() if not _state.trades_df.empty else None
+    if df is None:
+        return empty_fig("No data available.")
 
     return make_timeline_figure(politician, ticker, df, _state.prices_df)

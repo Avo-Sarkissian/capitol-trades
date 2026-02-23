@@ -4,10 +4,8 @@ Entry point. Initializes Dash, loads data, defines layout, wires callbacks.
 Keep this file thin — visualization logic lives in components/.
 """
 
-from datetime import datetime, timedelta
-from io import StringIO
+from datetime import timedelta
 
-import pandas as pd
 from dash import Dash, dcc, html, Input, Output, callback
 
 # ── Data loading (runs once at startup) ───────────────────────────────────────
@@ -31,7 +29,7 @@ trades_raw["AmountMidpoint"] = trades_raw["Amount"].apply(parse_trade_amount)
 
 # Determine date range for price fetching
 min_date = trades_raw["TransactionDate"].min()
-max_date = datetime.now()
+max_date = trades_raw["TransactionDate"].max()
 price_start = (min_date - timedelta(days=5)).strftime("%Y-%m-%d")
 price_end   = (max_date + timedelta(days=95)).strftime("%Y-%m-%d")
 
@@ -136,7 +134,7 @@ def build_sidebar() -> html.Div:
                     date=DATE_MIN,
                     min_date_allowed=DATE_MIN,
                     max_date_allowed=DATE_MAX,
-                    display_format="MM/DD/YY",
+                    display_format="MM/DD/YYYY",
                     className="dark-datepicker",
                 ),
                 html.Span("→", className="date-arrow"),
@@ -145,7 +143,7 @@ def build_sidebar() -> html.Div:
                     date=DATE_MAX,
                     min_date_allowed=DATE_MIN,
                     max_date_allowed=DATE_MAX,
-                    display_format="MM/DD/YY",
+                    display_format="MM/DD/YYYY",
                     className="dark-datepicker",
                 ),
             ]),
@@ -188,6 +186,20 @@ def build_tabs() -> dcc.Tabs:
     )
 
 
+# ── Data source badge ────────────────────────────────────────────────────────
+_data_badge_children = [
+    html.Span(className="live-dot"),
+    html.Span("LIVE", id="header-badge"),
+]
+if _state.using_mock_data:
+    _data_badge_children = [
+        html.Span("MOCK DATA", style={
+            "fontFamily": "var(--mono)", "fontSize": "9px", "fontWeight": "600",
+            "color": "#f59e0b", "letterSpacing": "0.1em",
+        }),
+    ]
+
+
 app.layout = html.Div(id="app-wrapper", children=[
 
     # ── Header ────────────────────────────────────────────────────
@@ -196,10 +208,7 @@ app.layout = html.Div(id="app-wrapper", children=[
             html.Span("CAPITOL TRADES", id="header-logo"),
             html.Span("Congressional Stock Trading Dashboard", id="header-subtitle"),
         ]),
-        html.Div(id="header-right", children=[
-            html.Span(className="live-dot"),
-            html.Span("LIVE", id="header-badge"),
-        ]),
+        html.Div(id="header-right", children=_data_badge_children),
     ]),
 
     # ── Body ──────────────────────────────────────────────────────
@@ -255,7 +264,10 @@ def update_store(politicians, party, chamber, sectors, start_date, end_date, min
     n_pol = filtered["Representative"].nunique()
     vol   = filtered["AmountMidpoint"].sum()
 
-    stats = html.Div(className="stats-grid", children=[
+    # Count trades with unknown sector
+    n_unknown = int((filtered["Sector"] == "Unknown").sum()) if "Sector" in filtered.columns else 0
+
+    stat_chips = [
         html.Div(className="stat-chip", children=[
             html.Span(f"{n:,}",              className="stat-val"),
             html.Span("trades",              className="stat-lbl"),
@@ -268,7 +280,17 @@ def update_store(politicians, party, chamber, sectors, start_date, end_date, min
             html.Span(f"${vol/1e6:.1f}M",   className="stat-val"),
             html.Span("est. volume",         className="stat-lbl"),
         ]),
-    ])
+    ]
+
+    if n_unknown > 0:
+        stat_chips.append(
+            html.Div(className="stat-chip", children=[
+                html.Span(str(n_unknown),    className="stat-val"),
+                html.Span("unknown sector",  className="stat-lbl"),
+            ])
+        )
+
+    stats = html.Div(className="stats-grid", children=stat_chips)
 
     out = filtered.copy()
     out["TransactionDate"] = out["TransactionDate"].astype(str)
@@ -288,10 +310,8 @@ def render_tab(tab_value: str, store_data: str):
     from components.network     import build_network_tab
     from components.leaderboard import build_leaderboard_tab
 
-    if store_data:
-        df = pd.read_json(StringIO(store_data), orient="split")
-        df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
-    else:
+    df = _state.deserialize_store(store_data)
+    if df is None:
         df = trades_df.copy()
 
     dispatch = {

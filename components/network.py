@@ -7,22 +7,17 @@ Highlights potential conflicts of interest.
 """
 
 from __future__ import annotations
-from io import StringIO
 
 import numpy as np
 import pandas as pd
 import networkx as nx
 import plotly.graph_objects as go
-from dash import dcc, html, callback, Input, Output, State
+from dash import dcc, html, callback, Input, Output
 
-CHART_BG   = "#06090f"
-PAPER_BG   = "#06090f"
-GRID_COLOR = "#1e2a36"
-TEXT_COLOR = "#e2e8f0"
-GOLD       = "#f0c040"
-DEM_BLUE   = "#3b82f6"
-REP_RED    = "#ef4444"
-SECTOR_CLR = "#d4a843"  # gold for sector nodes
+from components.constants import (
+    CHART_BG, PAPER_BG, GRID_COLOR, TEXT_COLOR, GOLD,
+    DEM_BLUE, REP_RED, GOLD_DIM, CHART_FONT, empty_fig,
+)
 
 
 # Simplified committee membership (politician → list of committees)
@@ -55,16 +50,7 @@ _COMMITTEE_MEMBERSHIPS: dict[str, list[str]] = {
 
 
 def build_network_tab(trades_df: pd.DataFrame, prices_df: pd.DataFrame) -> html.Div:
-    """
-    Build the Committee Network tab layout.
-
-    Args:
-        trades_df:  Filtered trades DataFrame.
-        prices_df:  Unused — kept for consistent signature.
-
-    Returns:
-        html.Div with the network graph.
-    """
+    """Build the Committee Network tab layout."""
     return html.Div([
         html.Div(
             style={"marginBottom": "12px", "fontSize": "11px", "color": "#7a90b0"},
@@ -88,17 +74,14 @@ def build_network_tab(trades_df: pd.DataFrame, prices_df: pd.DataFrame) -> html.
 
 
 def make_network_figure(trades_df: pd.DataFrame) -> go.Figure:
-    """
-    Build the NetworkX-based, Plotly-rendered conflict-of-interest network.
-
-    Args:
-        trades_df: Filtered trades DataFrame with Sector and Representative columns.
-
-    Returns:
-        Plotly Figure.
-    """
+    """Build the NetworkX-based, Plotly-rendered conflict-of-interest network."""
     if trades_df.empty:
-        return _empty_fig("No trades in current selection.")
+        return empty_fig("No trades in current selection.")
+
+    # Validate required columns
+    required = {"Representative", "Sector", "AmountMidpoint", "Party"}
+    if not required.issubset(trades_df.columns):
+        return empty_fig("Missing required columns for network graph.")
 
     from data.process import get_committee_sector_mapping
     committee_sector = get_committee_sector_mapping()
@@ -132,7 +115,7 @@ def make_network_figure(trades_df: pd.DataFrame) -> go.Figure:
         sector = row["Sector"]
         vol    = row["AmountMidpoint"]
 
-        if sector == "Unknown" or sector == "":
+        if sector in ("Unknown", ""):
             continue
 
         # Only draw edge if the politician has committee oversight of this sector
@@ -143,20 +126,18 @@ def make_network_figure(trades_df: pd.DataFrame) -> go.Figure:
             edges_data.append({"pol": pol, "sector": sector, "vol": vol})
 
     if G.number_of_nodes() == 0:
-        return _empty_fig(
+        return empty_fig(
             "No conflict-of-interest edges found in current filter.\n"
             "Try expanding filters to include more politicians."
         )
 
     # ── Layout ────────────────────────────────────────────────────
-    # Use spring layout, bipartite if possible
     try:
         pos = nx.spring_layout(G, seed=42, k=2.0 / np.sqrt(G.number_of_nodes()))
     except Exception:
         pos = nx.random_layout(G, seed=42)
 
     # ── Build Plotly traces ───────────────────────────────────────
-    # Edge traces — one per edge so we can set thickness individually
     max_vol = max((e["vol"] for e in edges_data), default=1)
     edge_traces = []
 
@@ -248,7 +229,7 @@ def make_network_figure(trades_df: pd.DataFrame) -> go.Figure:
         marker={
             "symbol": "square",
             "size": sec_sizes,
-            "color": SECTOR_CLR,
+            "color": GOLD_DIM,
             "opacity": 0.85,
             "line": {"color": "white", "width": 1},
         },
@@ -263,7 +244,7 @@ def make_network_figure(trades_df: pd.DataFrame) -> go.Figure:
     fig.update_layout(
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=CHART_BG,
-        font={"color": TEXT_COLOR, "family": "IBM Plex Mono, monospace", "size": 11},
+        font=CHART_FONT,
         margin={"l": 20, "r": 20, "t": 20, "b": 20},
         showlegend=True,
         legend={
@@ -284,23 +265,6 @@ def _get_party(politician: str, trades_df: pd.DataFrame) -> str:
     return rows.iloc[0] if not rows.empty else "Unknown"
 
 
-def _empty_fig(message: str) -> go.Figure:
-    fig = go.Figure()
-    fig.update_layout(
-        paper_bgcolor=PAPER_BG,
-        plot_bgcolor=CHART_BG,
-        font={"color": TEXT_COLOR},
-        annotations=[{
-            "text": message.replace("\n", "<br>"),
-            "xref": "paper", "yref": "paper",
-            "x": 0.5, "y": 0.5,
-            "showarrow": False,
-            "font": {"size": 13, "color": "#7a90b0"},
-        }],
-    )
-    return fig
-
-
 # ── Callback ───────────────────────────────────────────────────────────────────
 
 @callback(
@@ -309,9 +273,9 @@ def _empty_fig(message: str) -> go.Figure:
 )
 def update_network(store_data: str):
     """Redraw the network when filters change."""
-    if not store_data:
-        return _empty_fig("No data.")
-    df = pd.read_json(StringIO(store_data), orient="split")
-    df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
-    df["AmountMidpoint"]  = pd.to_numeric(df["AmountMidpoint"], errors="coerce").fillna(0)
+    import data.state as _state
+
+    df = _state.deserialize_store(store_data)
+    if df is None:
+        return empty_fig("No data.")
     return make_network_figure(df)

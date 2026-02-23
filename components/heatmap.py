@@ -5,31 +5,19 @@ Green = net buying, Red = net selling, White = neutral.
 """
 
 from __future__ import annotations
-from io import StringIO
 
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from dash import dcc, html, callback, Input, Output, State
+from dash import dcc, html, callback, Input, Output
 
-CHART_BG   = "#06090f"
-PAPER_BG   = "#06090f"
-GRID_COLOR = "#1e2a36"
-TEXT_COLOR = "#e2e8f0"
-GOLD       = "#f0c040"
+from components.constants import (
+    CHART_BG, PAPER_BG, GRID_COLOR, TEXT_COLOR, GOLD, CHART_FONT, empty_fig,
+)
 
 
 def build_heatmap_tab(trades_df: pd.DataFrame, prices_df: pd.DataFrame) -> html.Div:
-    """
-    Build the Sector Heatmap tab layout.
-
-    Args:
-        trades_df:  Filtered trades DataFrame.
-        prices_df:  Not used by this tab (kept for consistent signature).
-
-    Returns:
-        html.Div with chart.
-    """
+    """Build the Sector Heatmap tab layout."""
     return html.Div([
         html.Div(
             style={"marginBottom": "12px", "fontSize": "11px", "color": "#7a90b0"},
@@ -54,18 +42,11 @@ def build_heatmap_tab(trades_df: pd.DataFrame, prices_df: pd.DataFrame) -> html.
 def make_heatmap_figure(trades_df: pd.DataFrame) -> go.Figure:
     """
     Build the sector × month heatmap figure.
-
     Cell value = (sum of buy midpoints) − (sum of sell midpoints) for that cell.
     Normalized to millions of dollars.
-
-    Args:
-        trades_df: Filtered trades DataFrame with Sector, TransactionDate, AmountMidpoint.
-
-    Returns:
-        Plotly Figure.
     """
     if trades_df.empty or "Sector" not in trades_df.columns:
-        return _empty_fig("No data to display.")
+        return empty_fig("No data to display.")
 
     df = trades_df.copy()
     df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
@@ -90,7 +71,7 @@ def make_heatmap_figure(trades_df: pd.DataFrame) -> go.Figure:
     pivot = pivot[pivot.index != "Unknown"]
 
     if pivot.empty:
-        return _empty_fig("Not enough sector data.")
+        return empty_fig("Not enough sector data.")
 
     # Sort sectors alphabetically, months chronologically
     pivot = pivot.sort_index(axis=0)  # sectors
@@ -106,7 +87,6 @@ def make_heatmap_figure(trades_df: pd.DataFrame) -> go.Figure:
         row_texts = []
         for m in months:
             net = pivot.loc[s, m]
-            # Count trades in this cell
             cell_mask = (df["Sector"] == s) & (df["Month"] == m)
             n_trades  = int(cell_mask.sum())
             top_traders = (
@@ -157,7 +137,7 @@ def make_heatmap_figure(trades_df: pd.DataFrame) -> go.Figure:
     fig.update_layout(
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=CHART_BG,
-        font={"color": TEXT_COLOR, "family": "IBM Plex Mono, monospace", "size": 11},
+        font=CHART_FONT,
         margin={"l": 160, "r": 20, "t": 40, "b": 100},
         xaxis={
             "title": "Month",
@@ -176,24 +156,6 @@ def make_heatmap_figure(trades_df: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def _empty_fig(message: str) -> go.Figure:
-    """Return a blank figure with an annotation."""
-    fig = go.Figure()
-    fig.update_layout(
-        paper_bgcolor=PAPER_BG,
-        plot_bgcolor=CHART_BG,
-        font={"color": TEXT_COLOR},
-        annotations=[{
-            "text": message,
-            "xref": "paper", "yref": "paper",
-            "x": 0.5, "y": 0.5,
-            "showarrow": False,
-            "font": {"size": 14, "color": "#7a90b0"},
-        }],
-    )
-    return fig
-
-
 # ── Callback: re-render when store updates ─────────────────────────────────────
 
 @callback(
@@ -202,9 +164,9 @@ def _empty_fig(message: str) -> go.Figure:
 )
 def update_heatmap(store_data: str):
     """Redraw the heatmap whenever the global filter store changes."""
-    if not store_data:
-        return _empty_fig("No data.")
-    df = pd.read_json(StringIO(store_data), orient="split")
-    df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
-    df["AmountMidpoint"]  = pd.to_numeric(df["AmountMidpoint"], errors="coerce").fillna(0)
+    import data.state as _state
+
+    df = _state.deserialize_store(store_data)
+    if df is None:
+        return empty_fig("No data.")
     return make_heatmap_figure(df)

@@ -5,20 +5,16 @@ X-axis = SPY return, Y-axis = trade return. Dots above the diagonal beat the mar
 """
 
 from __future__ import annotations
-from io import StringIO
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from dash import dcc, html, callback, Input, Output, State
+from dash import dcc, html, callback, Input, Output
 
-CHART_BG   = "#06090f"
-PAPER_BG   = "#06090f"
-GRID_COLOR = "#1e2a36"
-TEXT_COLOR = "#e2e8f0"
-GOLD       = "#f0c040"
-DEM_BLUE   = "#3b82f6"
-REP_RED    = "#ef4444"
+from components.constants import (
+    CHART_BG, PAPER_BG, GRID_COLOR, TEXT_COLOR, GOLD,
+    DEM_BLUE, REP_RED, CHART_FONT, empty_fig,
+)
 
 # Maps dot size to trade amount (marker area ∝ amount)
 MARKER_MIN_PX = 5
@@ -26,16 +22,7 @@ MARKER_MAX_PX = 20
 
 
 def build_scatter_tab(trades_df: pd.DataFrame, prices_df: pd.DataFrame) -> html.Div:
-    """
-    Build the Alpha Scatter tab layout with a window selector.
-
-    Args:
-        trades_df:  Filtered trades DataFrame (must include alpha columns).
-        prices_df:  Unused — alpha already computed in trades_df.
-
-    Returns:
-        html.Div with window dropdown and graph.
-    """
+    """Build the Alpha Scatter tab layout with a window selector."""
     return html.Div([
         html.Div(
             style={"display": "flex", "gap": "16px", "alignItems": "center", "marginBottom": "12px"},
@@ -69,26 +56,21 @@ def build_scatter_tab(trades_df: pd.DataFrame, prices_df: pd.DataFrame) -> html.
 
 
 def make_scatter_figure(trades_df: pd.DataFrame, window: int = 60) -> go.Figure:
-    """
-    Build the scatter plot for a given return window.
-
-    Args:
-        trades_df: Filtered trades DataFrame with return_{window}d and spy_{window}d columns.
-        window:    Integer day window (30, 60, or 90).
-
-    Returns:
-        Plotly Figure.
-    """
+    """Build the scatter plot for a given return window."""
     ret_col = f"return_{window}d"
     spy_col = f"spy_{window}d"
 
     if trades_df.empty or ret_col not in trades_df.columns:
-        return _empty_fig(f"Alpha data not available. Run with full price history to compute {window}d returns.")
+        return empty_fig(f"Alpha data not available. Run with full price history to compute {window}d returns.")
 
     df = trades_df.dropna(subset=[ret_col, spy_col]).copy()
 
     if df.empty:
-        return _empty_fig("Not enough data to compute alpha for current filters.")
+        return empty_fig("Not enough data to compute alpha for current filters.")
+
+    # Validate required columns
+    if "Party" not in df.columns or "AmountMidpoint" not in df.columns:
+        return empty_fig("Missing required columns for scatter plot.")
 
     # Scale marker sizes
     amounts = df["AmountMidpoint"].clip(lower=1)
@@ -160,7 +142,6 @@ def make_scatter_figure(trades_df: pd.DataFrame, window: int = 60) -> go.Figure:
     )
 
     # ── Layout ────────────────────────────────────────────────────
-    # Compute aggregate stats for annotation
     beats_market = (df[ret_col] > df[spy_col]).sum()
     pct_beat     = beats_market / len(df) * 100
     avg_alpha    = (df[ret_col] - df[spy_col]).mean() * 100
@@ -174,7 +155,7 @@ def make_scatter_figure(trades_df: pd.DataFrame, window: int = 60) -> go.Figure:
         x=0.01, y=0.99,
         xanchor="left", yanchor="top",
         showarrow=False,
-        font={"color": GOLD, "size": 11, "family": "IBM Plex Mono, monospace"},
+        font={"color": GOLD, "size": 11, "family": "JetBrains Mono, monospace"},
         bgcolor="rgba(10,22,40,0.85)",
         bordercolor=GOLD,
         borderwidth=1,
@@ -184,7 +165,7 @@ def make_scatter_figure(trades_df: pd.DataFrame, window: int = 60) -> go.Figure:
     fig.update_layout(
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=CHART_BG,
-        font={"color": TEXT_COLOR, "family": "IBM Plex Mono, monospace", "size": 11},
+        font=CHART_FONT,
         margin={"l": 70, "r": 20, "t": 30, "b": 60},
         xaxis={
             "title": f"S&P 500 (SPY) {window}-Day Return (%)",
@@ -211,23 +192,6 @@ def make_scatter_figure(trades_df: pd.DataFrame, window: int = 60) -> go.Figure:
     return fig
 
 
-def _empty_fig(message: str) -> go.Figure:
-    fig = go.Figure()
-    fig.update_layout(
-        paper_bgcolor=PAPER_BG,
-        plot_bgcolor=CHART_BG,
-        font={"color": TEXT_COLOR},
-        annotations=[{
-            "text": message,
-            "xref": "paper", "yref": "paper",
-            "x": 0.5, "y": 0.5,
-            "showarrow": False,
-            "font": {"size": 13, "color": "#7a90b0"},
-        }],
-    )
-    return fig
-
-
 # ── Callbacks ──────────────────────────────────────────────────────────────────
 
 @callback(
@@ -238,12 +202,11 @@ def _empty_fig(message: str) -> go.Figure:
 )
 def update_scatter(window: int, store_data: str):
     """Re-render scatter when window or filters change."""
-    if not store_data:
-        return _empty_fig("No data."), ""
+    import data.state as _state
 
-    df = pd.read_json(StringIO(store_data), orient="split")
-    df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
-    df["AmountMidpoint"]  = pd.to_numeric(df["AmountMidpoint"], errors="coerce").fillna(0)
+    df = _state.deserialize_store(store_data)
+    if df is None:
+        return empty_fig("No data."), ""
 
     ret_col = f"return_{window}d"
     spy_col = f"spy_{window}d"

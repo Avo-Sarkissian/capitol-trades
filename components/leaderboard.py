@@ -4,20 +4,16 @@ Tab 5: Leaderboard — top traders by volume and by alpha, plus summary stats pa
 """
 
 from __future__ import annotations
-from io import StringIO
 
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from dash import dcc, html, callback, Input, Output, State
+from dash import dcc, html, callback, Input, Output
 
-CHART_BG   = "#06090f"
-PAPER_BG   = "#06090f"
-GRID_COLOR = "#1e2a36"
-TEXT_COLOR = "#e2e8f0"
-GOLD       = "#f0c040"
-DEM_BLUE   = "#3b82f6"
-REP_RED    = "#ef4444"
+from components.constants import (
+    CHART_BG, PAPER_BG, GRID_COLOR, TEXT_COLOR, GOLD,
+    DEM_BLUE, REP_RED, CHART_FONT, empty_fig,
+)
 
 TOP_N = 20  # number of politicians shown in each ranking
 
@@ -25,13 +21,6 @@ TOP_N = 20  # number of politicians shown in each ranking
 def build_leaderboard_tab(trades_df: pd.DataFrame, prices_df: pd.DataFrame) -> html.Div:
     """
     Build the Leaderboard tab: volume ranking, alpha ranking, and a summary stats row.
-
-    Args:
-        trades_df: Filtered trades DataFrame.
-        prices_df: Unused — kept for consistent call signature.
-
-    Returns:
-        html.Div with stats row + two ranking charts.
     """
     summary = _build_summary_stats(trades_df)
     vol_fig  = make_volume_leaderboard(trades_df)
@@ -59,7 +48,7 @@ def build_leaderboard_tab(trades_df: pd.DataFrame, prices_df: pd.DataFrame) -> h
                     children=[
                         html.Div("Top Traders by Estimated Volume",
                                  style={"color": GOLD, "fontSize": "11px",
-                                        "fontFamily": "IBM Plex Mono, monospace",
+                                        "fontFamily": "JetBrains Mono, monospace",
                                         "marginBottom": "6px"}),
                         dcc.Loading(
                             type="circle", color=GOLD,
@@ -78,7 +67,7 @@ def build_leaderboard_tab(trades_df: pd.DataFrame, prices_df: pd.DataFrame) -> h
                         html.Div(
                             "Top Traders by 60-Day Alpha (min 10 trades)",
                             style={"color": GOLD, "fontSize": "11px",
-                                   "fontFamily": "IBM Plex Mono, monospace",
+                                   "fontFamily": "JetBrains Mono, monospace",
                                    "marginBottom": "6px"},
                         ),
                         dcc.Loading(
@@ -104,13 +93,18 @@ def _build_summary_stats(trades_df: pd.DataFrame) -> list:
 
     n_trades    = len(trades_df)
     total_vol   = trades_df["AmountMidpoint"].sum()
-    top_pol     = trades_df.groupby("Representative")["AmountMidpoint"].sum().idxmax()
-    top_sector  = (
-        trades_df[trades_df["Sector"] != "Unknown"]
-        .groupby("Sector")["AmountMidpoint"].sum().idxmax()
-        if "Sector" in trades_df.columns and not trades_df[trades_df["Sector"] != "Unknown"].empty
-        else "—"
-    )
+
+    # Safe idxmax — guard against empty groupby results
+    vol_by_pol = trades_df.groupby("Representative")["AmountMidpoint"].sum()
+    top_pol = vol_by_pol.idxmax() if not vol_by_pol.empty else "—"
+
+    # Safe sector lookup
+    known_sectors = trades_df[trades_df.get("Sector", pd.Series(dtype=str)) != "Unknown"] if "Sector" in trades_df.columns else pd.DataFrame()
+    if not known_sectors.empty:
+        sector_vol = known_sectors.groupby("Sector")["AmountMidpoint"].sum()
+        top_sector = sector_vol.idxmax() if not sector_vol.empty else "—"
+    else:
+        top_sector = "—"
 
     # % beats market (60d)
     if "alpha_60d" in trades_df.columns:
@@ -126,27 +120,26 @@ def _build_summary_stats(trades_df: pd.DataFrame) -> list:
             html.Div(sub,   className="stat-card-sub"),
         ])
 
+    top_pol_short = top_pol.split()[-1] if top_pol != "—" else "—"
+    top_pol_full = top_pol if top_pol != "—" else ""
+
     return [
         card("Total Trades",         f"{n_trades:,}"),
         card("Est. Total Volume",    f"${total_vol/1e6:.1f}M"),
         card("% Beating S&P (60d)",  pct_beat),
         card("Most Traded Sector",   top_sector),
-        card("Most Active Trader",   top_pol.split()[-1], top_pol),
+        card("Most Active Trader",   top_pol_short, top_pol_full),
     ]
 
 
 def make_volume_leaderboard(trades_df: pd.DataFrame) -> go.Figure:
-    """
-    Horizontal bar chart — top politicians by total estimated trade volume.
-
-    Args:
-        trades_df: Filtered trades DataFrame.
-
-    Returns:
-        Plotly Figure.
-    """
+    """Horizontal bar chart — top politicians by total estimated trade volume."""
     if trades_df.empty:
-        return _empty_fig("No data.")
+        return empty_fig("No data.")
+
+    required = {"Representative", "Party", "AmountMidpoint", "Ticker"}
+    if not required.issubset(trades_df.columns):
+        return empty_fig("Missing required columns for volume leaderboard.")
 
     agg = (
         trades_df.groupby(["Representative", "Party"])
@@ -181,21 +174,13 @@ def make_volume_leaderboard(trades_df: pd.DataFrame) -> go.Figure:
 
 
 def make_alpha_leaderboard(trades_df: pd.DataFrame) -> go.Figure:
-    """
-    Horizontal bar chart — top politicians by average 60-day alpha (min 10 trades).
-
-    Args:
-        trades_df: Filtered trades DataFrame.
-
-    Returns:
-        Plotly Figure.
-    """
+    """Horizontal bar chart — top politicians by average 60-day alpha (min 10 trades)."""
     if trades_df.empty or "alpha_60d" not in trades_df.columns:
-        return _empty_fig("Alpha data not available for current filters.")
+        return empty_fig("Alpha data not available for current filters.")
 
     valid = trades_df.dropna(subset=["alpha_60d"])
     if valid.empty:
-        return _empty_fig("Not enough data to compute alpha rankings.")
+        return empty_fig("Not enough data to compute alpha rankings.")
 
     agg = (
         valid.groupby(["Representative", "Party"])
@@ -206,7 +191,7 @@ def make_alpha_leaderboard(trades_df: pd.DataFrame) -> go.Figure:
     agg = agg[agg["n_trades"] >= 10]
 
     if agg.empty:
-        return _empty_fig("Not enough trades per politician to rank by alpha.\n(Need ≥10 trades with alpha data.)")
+        return empty_fig("Not enough trades per politician to rank by alpha.\n(Need ≥10 trades with alpha data.)")
 
     agg = agg.sort_values("avg_alpha", ascending=False).head(TOP_N)
     agg = agg.sort_values("avg_alpha", ascending=True)  # flip for horizontal chart
@@ -245,7 +230,7 @@ def _chart_layout(x_title: str, y_title: str) -> dict:
     return {
         "paper_bgcolor": PAPER_BG,
         "plot_bgcolor":  CHART_BG,
-        "font": {"color": TEXT_COLOR, "family": "IBM Plex Mono, monospace", "size": 10},
+        "font": CHART_FONT,
         "margin": {"l": 160, "r": 20, "t": 10, "b": 50},
         "xaxis": {
             "title": x_title,
@@ -261,23 +246,6 @@ def _chart_layout(x_title: str, y_title: str) -> dict:
     }
 
 
-def _empty_fig(message: str) -> go.Figure:
-    fig = go.Figure()
-    fig.update_layout(
-        paper_bgcolor=PAPER_BG,
-        plot_bgcolor=CHART_BG,
-        font={"color": TEXT_COLOR},
-        annotations=[{
-            "text": message.replace("\n", "<br>"),
-            "xref": "paper", "yref": "paper",
-            "x": 0.5, "y": 0.5,
-            "showarrow": False,
-            "font": {"size": 12, "color": "#7a90b0"},
-        }],
-    )
-    return fig
-
-
 # ── Callbacks ──────────────────────────────────────────────────────────────────
 
 @callback(
@@ -288,13 +256,12 @@ def _empty_fig(message: str) -> go.Figure:
 )
 def update_leaderboard(store_data: str):
     """Refresh both ranking charts and stats cards when filters change."""
-    if not store_data:
-        empty = _empty_fig("No data.")
-        return empty, empty, []
+    import data.state as _state
 
-    df = pd.read_json(StringIO(store_data), orient="split")
-    df["TransactionDate"] = pd.to_datetime(df["TransactionDate"])
-    df["AmountMidpoint"]  = pd.to_numeric(df["AmountMidpoint"], errors="coerce").fillna(0)
+    df = _state.deserialize_store(store_data)
+    if df is None:
+        e = empty_fig("No data.")
+        return e, e, []
 
     return (
         make_volume_leaderboard(df),

@@ -267,6 +267,10 @@ def calculate_trade_alpha(
         df[spy_col]     = spy_returns
         df[alpha_col]   = df[returns_col] - df[spy_col]
 
+        n_nan = df[alpha_col].isna().sum()
+        n_valid = len(df) - n_nan
+        logger.info(f"  {window}d alpha: {n_valid} valid, {n_nan} missing ({n_nan/len(df)*100:.0f}%)")
+
     return df
 
 

@@ -224,6 +224,8 @@ def fetch_congress_trades() -> pd.DataFrame:
             logger.warning(f"Quiver Quant API failed: {e}. Falling back to mock data.")
 
     # Fall back to mock data
+    import data.state as _state
+    _state.using_mock_data = True
     df = _generate_mock_trades()
     _save_cache(df, cache_path)
     return df
